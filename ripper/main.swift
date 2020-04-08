@@ -8,11 +8,6 @@
 
 import Foundation
 
-typealias Path = String
-
-let args = CommandLine.arguments
-let console = ConsoleIO()
-
 enum RipperError: Error {
 	case wrongURL
 	case responseError(Error)
@@ -37,9 +32,21 @@ struct Master: Decodable {
 	let base_url: String
 }
 
+typealias Path = String
+
+let args = CommandLine.arguments
+let mp4Ext = ".mp4"
+
+let console = ConsoleIO()
+
 if args.count == 3 {
 	let masterURL = args[1]
-	let outputFilename = args[2]
+	let outputFilename: String = {
+		var filename = args[2]
+		if !filename.hasSuffix(mp4Ext) { filename += mp4Ext }
+		return filename
+	}()
+	
 	let currentPath = FileManager.default.currentDirectoryPath
 
 	getJSONDict(url: masterURL) { result in
@@ -63,10 +70,6 @@ if args.count == 3 {
 
 			let videoBase64String = video.init_segment
 			let audioBase64String = audio.init_segment
-
-			//			let videoFile = try? FileHandle(forWritingTo: URL(fileURLWithPath: videoOutputPath))
-			//			videoFile?.seekToEndOfFile()
-			//			defer { videoFile?.closeFile() }
 
 			// Video processing
 			console.writeMessage("Starting download video...")
@@ -115,10 +118,23 @@ if args.count == 3 {
 			} catch {
 				console.writeMessage(error.localizedDescription, to: .error)
 			}
-
 			// Merging audio and video
+			let merger = MediaMerger(
+				videoPath: videoOutputPath,
+				audioPath: audioOutputPath,
+				output: currentPath + "/" + outputFilename)
 
+			let queue = OperationQueue()
+			queue.addOperations([merger], waitUntilFinished: true)
 
+			console.writeMessage("Deleting separate audio/video files...")
+			do {
+				try FileManager.default.removeItem(atPath: videoOutputPath)
+				try FileManager.default.removeItem(atPath: audioOutputPath)
+				console.writeMessage("Completed")
+			} catch {
+				console.writeMessage(error.localizedDescription, to: .error)
+			}
 		case .failure(let error):
 			print(error)
 		}
