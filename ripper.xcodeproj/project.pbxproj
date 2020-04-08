@@ -27,7 +27,6 @@
 
 /* Begin PBXFileReference section */
 		694AC82A243CBB0200A6B4D0 /* URL+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "URL+Extension.swift"; sourceTree = "<group>"; };
-		699D6D22243DC38600F7B425 /* BridgingHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BridgingHeader.h; sourceTree = "<group>"; };
 		69E9A3CB2434DC2B0074F681 /* ripper */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ripper; sourceTree = BUILT_PRODUCTS_DIR; };
 		69E9A3CE2434DC2B0074F681 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		69E9A3D52434E8BA0074F681 /* ConsoleIO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsoleIO.swift; sourceTree = "<group>"; };
@@ -66,7 +65,6 @@
 			children = (
 				69E9A3CE2434DC2B0074F681 /* main.swift */,
 				69E9A3D52434E8BA0074F681 /* ConsoleIO.swift */,
-				699D6D22243DC38600F7B425 /* BridgingHeader.h */,
 				69E9A3D72438A7EA0074F681 /* Operations.swift */,
 				694AC82A243CBB0200A6B4D0 /* URL+Extension.swift */,
 			);
