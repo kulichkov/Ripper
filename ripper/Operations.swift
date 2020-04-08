@@ -10,22 +10,39 @@ import Foundation
 
 class MediaDownloader: Operation {
 	let url: URL
-	let completion: (Data?) -> Void
+	let path: String
+	let completion: (Bool) -> Void
 
-	init(url: URL, completion: @escaping (Data?) -> Void) {
+	init(url: URL, path: String, completion: @escaping (Bool) -> Void) {
 		self.url = url
+		self.path = path
 		self.completion = completion
 	}
 
 	override func main() {
+		guard !isCancelled else {
+			return
+		}
+
+		let maxRetries = 5
+		var i = 0
+		var data: Data?
+
+		while !isCancelled && data == nil && i <= maxRetries {
+			i += 1
+			do {
+				data = try Data(contentsOf: url)
+			} catch {
+				console.writeMessage("\(i) retry for \(url)")
+			}
+		}
+
 		if isCancelled {
-			completion(nil)
+			completion(false)
 			return
 		}
-		guard let data = try? Data(contentsOf: url), !isCancelled else {
-			completion(nil)
-			return
-		}
-		completion(data)
+
+		FileManager.default.createFile(atPath: path, contents: data)
+		completion(true)
 	}
 }

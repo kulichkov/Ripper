@@ -14,7 +14,7 @@ enum OutputType {
 }
 
 class ConsoleIO {
-	func writeMessage(_ message: String, sameLine: Bool = false, to: OutputType = .standard) {
+	func writeMessage(_ message: String, to: OutputType = .standard) {
 		switch to {
 		case .standard:
 			print("\(message)")

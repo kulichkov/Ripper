@@ -43,37 +43,37 @@ if args.count == 3 {
 	getJSONDict(url: masterURL) { result in
 		switch result {
 		case .success(let master):
+			console.writeMessage("Master file is downloaded...")
+
 			let videoOutputPath = currentPath + "/\(master.clip_id).m4v"
+			let segmentsFolder = currentPath + "/\(master.clip_id)"
+			let videoSegmentsFolder = segmentsFolder + "/video"
+			let audioSegmentsFolder = segmentsFolder + "/audio"
 			let audioOutputPath = currentPath + "/\(master.clip_id).m4a"
 			let masterURL = URL(string: masterURL)!
 
 			let video = master.video.sorted { $0.bitrate > $1.bitrate }.first!
+			let audio = master.audio.sorted { $0.bitrate > $1.bitrate }.first!
 
-			let videoURL = masterURL
+			let mediaBaseURL = masterURL
 				.withoutLastPathComponent()
 				.resolved(to: master.base_url)
-				.resolved(to: video.base_url)
 
-			let base64String = video.init_segment
+			let videoBase64String = video.init_segment
+			let audioBase64String = audio.init_segment
 
-			FileManager.default.createFile(atPath: videoOutputPath, contents: Data(base64Encoded: base64String))
-			let videoFile = try? FileHandle(forWritingTo: URL(fileURLWithPath: videoOutputPath))
-			videoFile?.seekToEndOfFile()
-			defer { videoFile?.closeFile() }
+			//FileManager.default.createFile(atPath: videoOutputPath, contents: Data(base64Encoded: videoBase64String))
 
-			let operations = video.segments.map { (segment) -> MediaDownloader in
-				let segmentURL = videoURL.resolved(to: segment.url)
-				return MediaDownloader(url: segmentURL) { data in
-					guard let data = data else {
-						console.writeMessage("no data for \(segmentURL)")
-						return
-					}
-					videoFile?.write(data)
-					console.writeMessage("data written for \(segmentURL)", sameLine: true) } }
+			//			let videoFile = try? FileHandle(forWritingTo: URL(fileURLWithPath: videoOutputPath))
+			//			videoFile?.seekToEndOfFile()
+			//			defer { videoFile?.closeFile() }
+			
+			console.writeMessage("Starting download video...")
+			downloadMedia(video, to: videoSegmentsFolder, baseURL: mediaBaseURL)
 
-			let queue = OperationQueue()
-			queue.maxConcurrentOperationCount = 1
-			queue.addOperations(operations, waitUntilFinished: true)
+			console.writeMessage("Starting download audio...")
+			downloadMedia(audio, to: audioSegmentsFolder, baseURL: mediaBaseURL)
+
 
 		case .failure(let error):
 			print(error)
@@ -81,6 +81,33 @@ if args.count == 3 {
 	}
 } else {
 	printUsage()
+}
+
+
+func downloadMedia(_ media: Media, to localFolder: String, baseURL: URL) {
+	do {
+		try FileManager.default.createDirectory(
+			atPath: localFolder,
+			withIntermediateDirectories: true)
+	} catch {
+		console.writeMessage(error.localizedDescription, to: .error)
+		return
+	}
+
+	let mediaURL = baseURL.resolved(to: media.base_url)
+
+	let operations = media.segments.map { (segment) -> MediaDownloader in
+		let segmentSourceURL = mediaURL.resolved(to: segment.url)
+		let segmentPath = localFolder + "/" + segment.url
+		return MediaDownloader(url: segmentSourceURL, path: segmentPath) { isDownloaded in
+			if isDownloaded {
+				console.writeMessage("data written to \(segmentPath)")
+			} else {
+				console.writeMessage("no data written for \(segment.url)")
+			} } }
+
+	let queue = OperationQueue()
+	queue.addOperations(operations, waitUntilFinished: true)
 }
 
 func printUsage() {
