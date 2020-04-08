@@ -98,7 +98,7 @@ if args.count == 3 {
 				audioPaths,
 				to: audioOutputPath,
 				withInitData: Data(base64Encoded: audioBase64String))
-			console.writeMessage("audio merged.")
+			console.writeMessage("Audio merged.")
 
 			console.writeMessage("Deleting audio segment folder...")
 			do {
@@ -107,6 +107,17 @@ if args.count == 3 {
 			} catch {
 				console.writeMessage(error.localizedDescription, to: .error)
 			}
+
+			console.writeMessage("Deleting segment folder...")
+			do {
+				try FileManager.default.removeItem(atPath: segmentsFolder)
+				console.writeMessage("Segment folder deleted")
+			} catch {
+				console.writeMessage(error.localizedDescription, to: .error)
+			}
+
+			// Merging audio and video
+
 
 		case .failure(let error):
 			print(error)
