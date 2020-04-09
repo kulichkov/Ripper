@@ -8,6 +8,7 @@
 
 import Foundation
 import AVFoundation
+import Progress
 
 class MediaMerger: AsyncOperation {
 	let videoPath: Path
@@ -59,9 +60,24 @@ class MediaMerger: AsyncOperation {
 			return
 		}
 
-		exporter.exportAsynchronously {
+		var progressBar = ProgressBar(
+			count: 100,
+			configuration: [ProgressString(string: "Merged:"),
+							ProgressPercent()])
+
+		let queue = DispatchQueue(label: "ru.ripper.app.timer")
+		let timer = DispatchSource.makeTimerSource(queue: queue)
+		timer.setEventHandler {
+			progressBar.setValue(Int(exporter.progress * 100))
+		}
+		timer.schedule(deadline: .now(), repeating: 0.5)
+		timer.resume()
+
+		exporter.exportAsynchronously { [weak self] in
+			timer.cancel()
+			progressBar.setValue(progressBar.count)
 			console.writeMessage("Merging completed")
-			self.finish()
+			self?.finish()
 		}
 	}
 }
