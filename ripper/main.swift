@@ -190,6 +190,8 @@ func downloadMedia(_ media: Media, to localFolder: Path, baseURL: URL) -> [Path]
 
 	let queue = OperationQueue()
 	queue.addOperations(operations, waitUntilFinished: true)
+	progressBar.setValue(progressBar.count)
+
 	return fileURLs
 }
 
