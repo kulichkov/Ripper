@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import Progress
 
 enum RipperError: Error {
 	case wrongURL
@@ -175,15 +176,16 @@ func downloadMedia(_ media: Media, to localFolder: Path, baseURL: URL) -> [Path]
 
 	var fileURLs = [Path]()
 
+	var progressBar = ProgressBar(count: media.segments.count)
+
 	let operations = media.segments.map { (segment) -> MediaDownloader in
 		let segmentSourceURL = mediaURL.resolved(to: segment.url)
 		let segmentPath = localFolder + "/" + segment.url
 		fileURLs.append(segmentPath)
 		return MediaDownloader(url: segmentSourceURL, path: segmentPath) { isDownloaded in
-			if isDownloaded {
-				console.writeMessage("data written to \(segmentPath)")
-			} else {
-				console.writeMessage("no data written for \(segment.url)")
+			progressBar.next()
+			if !isDownloaded {
+				console.writeMessage("no data written for \(segment.url)", to: .error)
 			} } }
 
 	let queue = OperationQueue()

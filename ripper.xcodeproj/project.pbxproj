@@ -3,10 +3,11 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 52;
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6909550D243F137B0060CB19 /* Progress in Frameworks */ = {isa = PBXBuildFile; productRef = 6909550C243F137B0060CB19 /* Progress */; };
 		694AC82B243CBB0200A6B4D0 /* URL+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 694AC82A243CBB0200A6B4D0 /* URL+Extension.swift */; };
 		699D6D26243F055700F7B425 /* AsyncOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 699D6D25243F055700F7B425 /* AsyncOperation.swift */; };
 		699D6D28243F058500F7B425 /* MediaDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 699D6D27243F058500F7B425 /* MediaDownloader.swift */; };
@@ -42,6 +43,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6909550D243F137B0060CB19 /* Progress in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -101,6 +103,9 @@
 			dependencies = (
 			);
 			name = ripper;
+			packageProductDependencies = (
+				6909550C243F137B0060CB19 /* Progress */,
+			);
 			productName = ripper;
 			productReference = 69E9A3CB2434DC2B0074F681 /* ripper */;
 			productType = "com.apple.product-type.tool";
@@ -129,6 +134,9 @@
 				Base,
 			);
 			mainGroup = 69E9A3C22434DC2B0074F681;
+			packageReferences = (
+				6909550B243F137B0060CB19 /* XCRemoteSwiftPackageReference "Progress.swift" */,
+			);
 			productRefGroup = 69E9A3CC2434DC2B0074F681 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -314,6 +322,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		6909550B243F137B0060CB19 /* XCRemoteSwiftPackageReference "Progress.swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/jkandzi/Progress.swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.4.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		6909550C243F137B0060CB19 /* Progress */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6909550B243F137B0060CB19 /* XCRemoteSwiftPackageReference "Progress.swift" */;
+			productName = Progress;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 69E9A3C32434DC2B0074F681 /* Project object */;
 }
