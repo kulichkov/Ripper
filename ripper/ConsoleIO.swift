@@ -14,10 +14,10 @@ enum OutputType {
 }
 
 class ConsoleIO {
-	func writeMessage(_ message: String, to: OutputType = .standard) {
+	func writeMessage(_ message: String, to: OutputType = .standard, terminator: String = "\n") {
 		switch to {
 		case .standard:
-			print("\(message)")
+			print("\(message)", terminator: terminator)
 		case .error:
 			fputs("Error: \(message)\n", stderr)
 		}

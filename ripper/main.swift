@@ -18,6 +18,8 @@ struct Segment: Decodable {
 	let url: String
 }
 
+enum MediaType: String { case video, audio }
+
 struct Media: Decodable {
 	let base_url: String
 	let init_segment: String
@@ -46,101 +48,95 @@ if args.count == 3 {
 		if !filename.hasSuffix(mp4Ext) { filename += mp4Ext }
 		return filename
 	}()
-	
-	let currentPath = FileManager.default.currentDirectoryPath
 
 	getJSONDict(url: masterURL) { result in
 		switch result {
 		case .success(let master):
-			console.writeMessage("Master file downloaded")
-
-			let videoOutputPath = currentPath + "/\(master.clip_id).m4v"
-			let segmentsFolder = currentPath + "/\(master.clip_id)"
-			let videoSegmentsFolder = segmentsFolder + "/video"
-			let audioSegmentsFolder = segmentsFolder + "/audio"
-			let audioOutputPath = currentPath + "/\(master.clip_id).m4a"
-			let masterURL = URL(string: masterURL)!
-
-			let video = master.video.sorted { $0.bitrate > $1.bitrate }.first!
-			let audio = master.audio.sorted { $0.bitrate > $1.bitrate }.first!
-
-			let mediaBaseURL = masterURL
-				.withoutLastPathComponent()
-				.resolved(to: master.base_url)
-
-			let videoBase64String = video.init_segment
-			let audioBase64String = audio.init_segment
-
-			// Video processing
-			console.writeMessage("Starting download video...")
-			let videoPaths = downloadMedia(video, to: videoSegmentsFolder, baseURL: mediaBaseURL)
-
-			console.writeMessage("Video downloaded. Starting merging video segments...")
-
-			mergeMediaFiles(
-				videoPaths,
-				to: videoOutputPath,
-				withInitData: Data(base64Encoded: videoBase64String))
-			console.writeMessage("Video merged.")
-
-			console.writeMessage("Deleting video segment folder...")
-			do {
-				try FileManager.default.removeItem(atPath: videoSegmentsFolder)
-				console.writeMessage("Video segment folder deleted")
-			} catch {
-				console.writeMessage(error.localizedDescription, to: .error)
-			}
-
-			// Audio processing
-			console.writeMessage("Starting download audio...")
-			let audioPaths = downloadMedia(audio, to: audioSegmentsFolder, baseURL: mediaBaseURL)
-
-			console.writeMessage("Audio downloaded. Starting merging audio segments...")
-
-			mergeMediaFiles(
-				audioPaths,
-				to: audioOutputPath,
-				withInitData: Data(base64Encoded: audioBase64String))
-			console.writeMessage("Audio merged.")
-
-			console.writeMessage("Deleting audio segment folder...")
-			do {
-				try FileManager.default.removeItem(atPath: audioSegmentsFolder)
-				console.writeMessage("Audio segment folder deleted")
-			} catch {
-				console.writeMessage(error.localizedDescription, to: .error)
-			}
-
-			console.writeMessage("Deleting segment folder...")
-			do {
-				try FileManager.default.removeItem(atPath: segmentsFolder)
-				console.writeMessage("Segment folder deleted")
-			} catch {
-				console.writeMessage(error.localizedDescription, to: .error)
-			}
-			// Merging audio and video
-			let merger = MediaMerger(
-				videoPath: videoOutputPath,
-				audioPath: audioOutputPath,
-				output: currentPath + "/" + outputFilename)
-
-			let queue = OperationQueue()
-			queue.addOperations([merger], waitUntilFinished: true)
-
-			console.writeMessage("Deleting separate audio/video files...")
-			do {
-				try FileManager.default.removeItem(atPath: videoOutputPath)
-				try FileManager.default.removeItem(atPath: audioOutputPath)
-				console.writeMessage("Completed")
-			} catch {
-				console.writeMessage(error.localizedDescription, to: .error)
-			}
+			processMaster(
+				master,
+				masterURL: masterURL,
+				outputFilename: outputFilename)
 		case .failure(let error):
 			print(error)
 		}
 	}
 } else {
 	printUsage()
+}
+
+func processMaster(_ master: Master, masterURL: String, outputFilename: String) {
+	console.writeMessage("Master file downloaded")
+
+	let currentPath = FileManager.default.currentDirectoryPath
+	let videoOutputPath = currentPath + "/\(master.clip_id).m4v"
+	let segmentsFolder = currentPath + "/\(master.clip_id)"
+	let videoSegmentsFolder = segmentsFolder + "/video"
+	let audioSegmentsFolder = segmentsFolder + "/audio"
+	let audioOutputPath = currentPath + "/\(master.clip_id).m4a"
+	let masterURL = URL(string: masterURL)!
+
+	let video = master.video.sorted { $0.bitrate > $1.bitrate }.first!
+	let audio = master.audio.sorted { $0.bitrate > $1.bitrate }.first!
+
+	let mediaBaseURL = masterURL
+		.withoutLastPathComponent()
+		.resolved(to: master.base_url)
+
+	// Video processing
+	process(
+		video,
+		type: .video,
+		to: videoOutputPath,
+		baseURL: mediaBaseURL,
+		tempFolder: videoSegmentsFolder)
+
+	// Audio processing
+	process(
+		audio,
+		type: .audio,
+		to: audioOutputPath,
+		baseURL: mediaBaseURL,
+		tempFolder: audioSegmentsFolder)
+
+	deleteLocalResources([segmentsFolder], startMessage: "Deleting segment folder")
+
+	// Merging audio and video
+	let merger = MediaMerger(
+		videoPath: videoOutputPath,
+		audioPath: audioOutputPath,
+		output: currentPath + "/" + outputFilename)
+
+	let queue = OperationQueue()
+	queue.addOperations([merger], waitUntilFinished: true)
+
+	deleteLocalResources(
+		[videoOutputPath, audioOutputPath],
+		startMessage: "Deleting separate audio/video files")
+}
+
+func process(_ media: Media, type: MediaType, to output: Path, baseURL: URL, tempFolder: Path) {
+	console.writeMessage("Starting download \(type.rawValue)...")
+	let mediaPaths = downloadMedia(media, to: tempFolder, baseURL: baseURL)
+
+	console.writeMessage("\(type.rawValue.capitalized) downloaded. Starting merging \(type.rawValue) segments...")
+
+	mergeMediaFiles(
+		mediaPaths,
+		to: output,
+		withInitData: Data(base64Encoded: media.init_segment))
+	console.writeMessage("\(type.rawValue.capitalized) merged.")
+
+	deleteLocalResources([tempFolder], startMessage: "Deleting \(type.rawValue) segment folder")
+}
+
+func deleteLocalResources(_ paths: [Path], startMessage: String) {
+	console.writeMessage(startMessage, terminator: "...")
+	do {
+		try paths.forEach(FileManager.default.removeItem)
+		console.writeMessage("Completed")
+	} catch {
+		console.writeMessage(error.localizedDescription, to: .error)
+	}
 }
 
 func mergeMediaFiles(_ paths: [Path], to output: Path, withInitData initData: Data?) {
@@ -228,25 +224,3 @@ func getJSONDict(url: String, completion: (Result<Master, RipperError>) -> Void)
 		completion(.failure(.parseError(error)))
 	}
 }
-
-
-
-/*
-function combineSegments(type, i, segmentsUrl, output, cb) {
-  if (i >= segmentsUrl.length) {
-    console.log(`${type} done`);
-    return cb();
-  }
-
-  console.log(`Download ${type} segment ${i}`);
-
-  https.get(segmentsUrl[i], (res) => {
-    res.on('data', (d) => output.write(d));
-
-    res.on('end', () => combineSegments(type, i+1, segmentsUrl, output, cb));
-
-  }).on('error', (e) => {
-    cb(e);
-  });
-}
-*/
